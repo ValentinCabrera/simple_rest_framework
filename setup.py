@@ -2,12 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name='simple_rest_framework',
-    version='0.1.0',
+    version='0.1.1',
     packages=find_packages(include=['simple_rest_framework', 'simple_rest_framework.*']),
     install_requires=[
-        'threading',
         'rest_framework',
-        're'
     ],
     entry_points={
         'console_scripts': [
