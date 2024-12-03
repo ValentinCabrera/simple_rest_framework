@@ -1,2 +1,0 @@
-[console_scripts]
-simple-rest = simple_rest_framework.cli:main
