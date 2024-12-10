@@ -39,7 +39,6 @@ class BaseSearchView(HandleExceptionsMixin, APIView, BaseService):
         service = self.get_service()
         result = service.listar(request, page=page, page_size=page_size, filter=filter_dict, sort=sort_dict)
 
-        # quito el total del diccionario
         total = result['total']
         result['mensaje'] = f"Se encontraron {total} {self.modelo._meta.verbose_name_plural.lower()}."
 
