@@ -1,5 +1,7 @@
 from .exceptions import ServiceException
 from threading import Thread
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.http import HttpRequest
 
 import re
 
@@ -18,6 +20,12 @@ class BaseService:
     def __init__(self, id=None):
         if id is not None:
             self.set_objeto(id)
+    
+    def get_service(self):
+        """
+        Método que devuelve la instancia de este mismo servicio.
+        """
+        return self
             
     def set_objeto(self, id):
         try:
@@ -87,46 +95,80 @@ class BaseService:
 
         return {filtro_icontains: valor}
 
-    def listar(self, **kwargs):
+    def listar(self, request: HttpRequest, page=None, page_size=None, filter=None, sort=None):
         data = []
-
-        filters = {}
-
-        if "filter" in kwargs:
-            for campo, valor in kwargs["filter"].items():
-                if campo not in self.filter_fields:
-                    raise ServiceException(f"El campo '{campo}' no es un campo válido para filtrar.")
-                
+        
+        filters = filter if filter else {}
+        sorts = sort if sort else {}
+    
+        # Aplicar filtros
+        if filters:
+            for campo, valor in filters.items():
+                # Asegúrate de que estos filtros sean válidos según tu modelo
                 filtro = self.get_filtro_by_campo(campo, valor)
                 filters.update(filtro)
-
+    
+        # Obtener los objetos filtrados
         objetos = self.modelo.objects.filter(**filters)
-
-        sorts = {}
-
-        if "sort" in kwargs:
-            for campo, valor in kwargs["sort"].items():
-                if campo not in self.sort_fields:
-                    raise ServiceException(f"El campo '{campo}' no es un campo válido para ordenar.")
-                if valor not in ['asc', 'desc']:
-                    raise ServiceException(f"La dirección '{valor}' no es válida. Use 'asc' o 'desc'.")
-                
-                sorts[campo] = valor
-
+    
+        # Aplicar ordenamiento
+        if sorts:
             order_by_fields = [
                 f"{'' if direccion == 'asc' else '-'}{campo}"
                 for campo, direccion in sorts.items()
             ]
-            
             objetos = objetos.order_by(*order_by_fields)
-
-        for objeto in objetos:
+    
+        # Si page o page_size es None, devolver solo data y total
+        if page is None or page_size is None:
+            for objeto in objetos:
+                service = self.__class__()
+                service.objeto = objeto
+                data.append(service.get_serializado())
+            return {
+                "data": data,
+                "total": objetos.count(),
+            }
+    
+        # Configurar el paginador
+        paginator = Paginator(objetos, page_size)
+    
+        try:
+            paginated_objects = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_objects = paginator.page(1)
+        except EmptyPage:
+            paginated_objects = paginator.page(paginator.num_pages)
+    
+        # Serializar los objetos paginados
+        for objeto in paginated_objects:
             service = self.__class__()
             service.objeto = objeto
-
             data.append(service.get_serializado())
-
-        return data
+    
+        # Obtener la URL base de la solicitud (para paginación)
+        base_url = request.build_absolute_uri(request.path)
+    
+        # Generar URLs de next y previous
+        previous_url = None
+        next_url = None
+    
+        if paginated_objects.has_previous():
+            previous_url = f"{base_url}&page={paginated_objects.previous_page_number()}&page_size={page_size}"
+    
+        if paginated_objects.has_next():
+            next_url = f"{base_url}&page={paginated_objects.next_page_number()}&page_size={page_size}"
+    
+        # Retornar datos paginados con metadatos
+        return {
+            "data": data,
+            "total": paginator.count,
+            "page": paginated_objects.number,
+            "num_pages": paginator.num_pages,
+            "page_size": page_size,
+            "previous": previous_url,
+            "next": next_url,
+        }
     
                     
     def validar_unicidad(self, campo, valor):
