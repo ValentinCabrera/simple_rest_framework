@@ -18,6 +18,19 @@ def parse_request_data(request):
 
 class BaseView(HandleExceptionsMixin, APIView, BaseService): pass
 
+class BaseUtilView(HandleExceptionsMixin, APIView, BaseService):
+    def get(self, request):
+        return Response({
+            "mensaje": "Utilizando la API de Simple Rest Framework.",
+            "data": {
+                "create_fields": self.create_fields,
+                "update_fields": self.update_fields,
+                "serialize_fields": self.serialize_fields,
+                "filter_fields": self.filter_fields,
+                "foreign_fields": self.foreign_fields
+                }
+            })
+
 class BaseSearchView(HandleExceptionsMixin, APIView, BaseService):
     def get(self, request):
         objetos = self.listar()
