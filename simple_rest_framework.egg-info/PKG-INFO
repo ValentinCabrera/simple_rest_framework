@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: simple_rest_framework
-Version: 0.4.3
+Version: 0.4.4
 Summary: Esta libreria permite agilizar el desarrollo de APIs REST en Django. Manejando un CRUD básico de forma automática y manejando excepciones de forma sencilla.
 Home-page: https://github.com/ValentinCabrera/simple_rest_framework
 Author: Valentin Cabrera
