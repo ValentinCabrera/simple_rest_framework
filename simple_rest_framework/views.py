@@ -32,13 +32,30 @@ class BaseUtilView(HandleExceptionsMixin, APIView, BaseService):
             })
 
 class BaseSearchView(HandleExceptionsMixin, APIView, BaseService):
-    def get(self, request):
-        objetos = self.listar()
+    def get(self, request, *args, **kwargs):
+        # Recibir los parámetros de la solicitud GET
+        page = request.GET.get('page', None)
+        page_size = int(request.GET.get('page_size')) if request.GET.get('page_size') else None
+        filter_params = request.GET.get('filter', None)
+        sort_params = request.GET.get('sort', None)
 
-        return Response({
-            "mensaje": f"Se encontraron {len(objetos)} {self.modelo._meta.verbose_name_plural.lower()}.",
-            "data": objetos
-            })
+        # Convertir los parámetros a los tipos correctos si es necesario
+        filter_dict = {}
+        if filter_params:
+            filter_dict = {key: value for key, value in [item.split('=') for item in filter_params.split(',')]}
+
+        sort_dict = {}
+        if sort_params:
+            sort_dict = {key: value for key, value in [item.split('=') for item in sort_params.split(',')]}
+
+        # Llamar al método listar del servicio pasando kwargs
+        service = self.get_service()
+        result = service.listar(request, page=page, page_size=page_size, filter=filter_dict, sort=sort_dict)
+
+        total = result['total']
+        result['mensaje'] = f"Se encontraron {total} {self.modelo._meta.verbose_name_plural.lower()}."
+
+        return Response(result)
 
     def post(self, request):
         data = request.data
