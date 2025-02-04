@@ -1,3 +1,4 @@
+README
 setup.py
 simple_rest_framework/__init__.py
 simple_rest_framework/exceptions.py
