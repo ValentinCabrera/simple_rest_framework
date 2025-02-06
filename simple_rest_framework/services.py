@@ -3,8 +3,6 @@ from threading import Thread
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.http import HttpRequest
 
-import re
-
 
 class BaseService:
     modelo = None
@@ -118,10 +116,12 @@ class BaseService:
 
         # Aplicar filtros
         if filters:
+            updated_filters = {}
             for campo, valor in filters.items():
                 # Asegúrate de que estos filtros sean válidos según tu modelo
                 filtro = self.get_filtro_by_campo(campo, valor)
-                filters.update(filtro)
+                updated_filters.update(filtro)
+            filters = updated_filters
 
         # Obtener los objetos filtrados
         objetos = self.modelo.objects.filter(**filters)
